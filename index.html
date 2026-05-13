@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pinguin Mofex Setlist Rater</title>
+  <style>
+    :root {
+      --ink: #030405;
+      --panel: #080b0f;
+      --panel-soft: #121722;
+      --cyan: #00d6df;
+      --cyan-deep: #008c9b;
+      --red: #c000a8;
+      --blue: #2448ff;
+      --purple: #7d00c9;
+      --magenta: #c4008b;
+      --white: #f7fbff;
+      --muted: #9ab0bd;
+      --gold: #00d6df;
+      --shadow: 5px 5px 0 var(--red), -5px -3px 0 var(--blue);
+      --max-width: 920px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(125, 0, 201, 0.45) 0 8%, transparent 9%),
+        radial-gradient(circle at 86% 22%, rgba(0, 214, 223, 0.22) 0 9%, transparent 10%),
+        radial-gradient(circle at 42% 92%, rgba(192, 0, 168, 0.24) 0 11%, transparent 12%),
+        linear-gradient(135deg, #050608, #000 52%, #07090d);
+      color: var(--white);
+      font-family: "Arial Narrow", "Franklin Gothic Medium", Impact, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      content: "";
+      opacity: 0.22;
+      background-image:
+        linear-gradient(90deg, rgba(0, 214, 223, 0.18) 1px, transparent 1px),
+        linear-gradient(rgba(192, 0, 168, 0.16) 1px, transparent 1px);
+      background-size: 20px 20px;
+      transform: rotate(-1deg) scale(1.04);
+    }
+
+    body::after {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      content: "";
+      opacity: 0.38;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 4px, rgba(0, 214, 223, 0.18) 5px),
+        radial-gradient(circle at 50% 100%, rgba(192, 0, 168, 0.34), transparent 36%);
+      mix-blend-mode: overlay;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page-shell {
+      width: min(var(--max-width), calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 44px;
+    }
+
+    .flyer {
+      position: relative;
+      min-height: calc(100vh - 68px);
+      padding: clamp(18px, 4vw, 42px);
+      border: 2px solid rgba(0, 214, 223, 0.72);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(196, 0, 139, 0.34), transparent 21%),
+        radial-gradient(circle at 82% 15%, rgba(0, 214, 223, 0.24), transparent 24%),
+        linear-gradient(180deg, #050607, #030405 72%, #000);
+      box-shadow: 10px 10px 0 var(--red), -10px -8px 0 var(--blue), 0 0 42px rgba(0, 214, 223, 0.24);
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    .flyer > :not(.doodle-wall) {
+      position: relative;
+      z-index: 1;
+    }
+
+    .flyer::before {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      content: "";
+      opacity: 0.18;
+      background-image:
+        linear-gradient(30deg, transparent 0 46%, var(--cyan) 47% 49%, transparent 50%),
+        linear-gradient(150deg, transparent 0 46%, var(--red) 47% 49%, transparent 50%);
+      background-size: 64px 64px;
+    }
+
+    .flyer::after {
+      position: absolute;
+      inset: 12px;
+      z-index: -1;
+      content: "";
+      border: 1px solid rgba(0, 214, 223, 0.22);
+      box-shadow: inset 0 0 70px rgba(0, 214, 223, 0.08);
+      pointer-events: none;
+    }
+
+    .doodle-wall {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .doodle {
+      position: absolute;
+      color: var(--cyan);
+      font-family: "Comic Sans MS", "Marker Felt", Impact, sans-serif;
+      font-size: var(--size, 2rem);
+      font-weight: 900;
+      line-height: 1;
+      text-transform: uppercase;
+      text-shadow: 3px 2px 0 var(--red), -3px -2px 0 var(--blue);
+      transform: rotate(var(--rotate, -8deg));
+      opacity: 0.88;
+    }
+
+    .doodle.is-black {
+      color: rgba(247, 251, 255, 0.82);
+      text-shadow: 3px 2px 0 var(--red), -3px -2px 0 var(--cyan);
+    }
+
+    .doodle.is-outline {
+      color: transparent;
+      -webkit-text-stroke: 2px var(--cyan);
+      text-shadow: 3px 2px 0 var(--red), -3px -2px 0 var(--blue);
+    }
+
+    .doodle:nth-child(1) { top: 82px; left: 4%; --size: 3.4rem; --rotate: -14deg; }
+    .doodle:nth-child(2) { top: 28px; left: 39%; --size: 2.7rem; --rotate: 12deg; }
+    .doodle:nth-child(3) { top: 118px; right: 7%; --size: 3.1rem; --rotate: 8deg; }
+    .doodle:nth-child(4) { top: 292px; left: 7%; --size: 2.2rem; --rotate: 18deg; }
+    .doodle:nth-child(5) { top: 330px; right: 4%; --size: 3.2rem; --rotate: -12deg; }
+    .doodle:nth-child(6) { top: 460px; left: 2%; --size: 2.6rem; --rotate: -6deg; }
+    .doodle:nth-child(7) { top: 572px; right: 8%; --size: 2.8rem; --rotate: 15deg; }
+    .doodle:nth-child(8) { bottom: 118px; left: 8%; --size: 2.4rem; --rotate: 9deg; }
+    .doodle:nth-child(9) { bottom: 42px; right: 17%; --size: 3rem; --rotate: -9deg; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: clamp(18px, 5vw, 42px);
+      align-items: end;
+      margin-bottom: clamp(26px, 5vw, 46px);
+    }
+
+    h1 {
+      max-width: 12ch;
+      margin: 0;
+      color: var(--ink);
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(3.5rem, 15vw, 9.5rem);
+      font-weight: 900;
+      line-height: 0.82;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      text-shadow:
+        2px 2px 0 var(--cyan),
+        5px 4px 0 var(--red),
+        -5px -3px 0 var(--blue),
+        0 0 18px rgba(0, 214, 223, 0.58);
+      -webkit-text-stroke: 2px var(--cyan);
+      overflow-wrap: anywhere;
+    }
+
+    .hero-copy {
+      max-width: 310px;
+      margin: 12px 0 0;
+      display: inline-block;
+      padding: 10px 12px;
+      border: 2px solid var(--cyan);
+      background: rgba(8, 11, 15, 0.92);
+      color: var(--white);
+      box-shadow: 4px 4px 0 var(--red), -4px -3px 0 var(--blue);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: clamp(1rem, 2.2vw, 1.12rem);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .setlist {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .song-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      min-height: 74px;
+      padding: 14px;
+      border: 2px solid var(--cyan);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      transform: rotate(var(--tilt, 0deg));
+    }
+
+    .song-card:nth-child(2n) {
+      --tilt: 0.35deg;
+    }
+
+    .song-card:nth-child(3n) {
+      --tilt: -0.3deg;
+    }
+
+    .song-card.is-rated {
+      background:
+        repeating-linear-gradient(-12deg, rgba(0, 214, 223, 0.13) 0 8px, transparent 9px 18px),
+        var(--panel);
+    }
+
+    .song-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      color: var(--white);
+      font-size: clamp(1.05rem, 3vw, 1.45rem);
+      font-weight: 900;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .track-number {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--cyan);
+      background: var(--ink);
+      color: var(--cyan);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.82rem;
+      box-shadow: 2px 2px 0 var(--red), -2px -1px 0 var(--blue);
+    }
+
+    .song-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .stars {
+      display: grid;
+      grid-template-columns: repeat(5, 38px);
+      gap: 4px;
+      align-items: center;
+    }
+
+    .star-button {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 2px solid transparent;
+      background: transparent;
+      color: rgba(247, 251, 255, 0.28);
+      font-size: 2rem;
+      line-height: 1;
+      transition: transform 120ms ease, color 120ms ease, text-shadow 120ms ease;
+    }
+
+    .star-button:hover,
+    .star-button:focus-visible {
+      color: var(--cyan);
+      outline: none;
+      transform: translateY(-2px) rotate(-5deg);
+      text-shadow: 2px 2px 0 var(--red), -2px -2px 0 var(--blue);
+    }
+
+    .star-button.is-filled {
+      color: var(--gold);
+      text-shadow: 2px 2px 0 var(--red), -2px -2px 0 var(--blue), 0 0 12px rgba(0, 214, 223, 0.7);
+    }
+
+    .star-button[data-rating="1"],
+    .star-button[data-rating="2"],
+    .star-button[data-rating="3"] {
+      cursor: not-allowed;
+    }
+
+    .form-warning {
+      display: none;
+      margin-top: 18px;
+      padding: 12px;
+      border: 2px dashed var(--cyan);
+      background: rgba(8, 11, 15, 0.92);
+      color: var(--white);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .form-warning.is-visible {
+      display: block;
+    }
+
+    .speech-bubble {
+      position: fixed;
+      z-index: 20;
+      max-width: min(210px, calc(100vw - 28px));
+      min-height: 30px;
+      padding: 8px 11px 10px;
+      border: 2px solid var(--cyan);
+      border-radius: 16px;
+      background: var(--panel);
+      color: var(--white);
+      box-shadow: 4px 4px 0 var(--red), -3px -2px 0 var(--blue);
+      font-family: "Comic Sans MS", "Marker Felt", "Chalkboard SE", sans-serif;
+      font-size: 0.94rem;
+      font-weight: 900;
+      line-height: 1.18;
+      text-transform: none;
+      text-shadow: 0.7px 0.7px 0 rgba(0, 214, 223, 0.45);
+      pointer-events: none;
+      animation: bubble-pop 820ms ease-out forwards;
+    }
+
+    .speech-bubble::after {
+      position: absolute;
+      right: 18px;
+      bottom: -8px;
+      width: 12px;
+      height: 12px;
+      border-right: 2px solid var(--cyan);
+      border-bottom: 2px solid var(--cyan);
+      background: var(--panel);
+      content: "";
+      transform: rotate(45deg);
+    }
+
+    @keyframes bubble-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(6px) scale(0.9);
+      }
+
+      16%,
+      68% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-5px) scale(0.96);
+      }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 760px) {
+      .page-shell {
+        width: min(100% - 18px, var(--max-width));
+        padding: 18px 0 30px;
+      }
+
+      .flyer {
+        min-height: calc(100vh - 36px);
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .song-card {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .stars {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        width: 100%;
+      }
+
+      .star-button {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .song-title {
+        align-items: flex-start;
+      }
+
+      .track-number {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="flyer" aria-labelledby="page-title">
+      <div class="doodle-wall" aria-hidden="true">
+        <span class="doodle is-black">X</span>
+        <span class="doodle">★</span>
+        <span class="doodle is-outline">PUNK</span>
+        <span class="doodle">///</span>
+        <span class="doodle is-black">ROCK</span>
+        <span class="doodle is-outline">♥</span>
+        <span class="doodle">RIFF</span>
+        <span class="doodle is-black">#</span>
+        <span class="doodle">!!</span>
+      </div>
+      <div class="hero">
+        <div>
+          <h1 id="page-title">Pinguin Mofex</h1>
+          <p class="hero-copy" id="pageCopy">
+            rate our songs
+          </p>
+        </div>
+      </div>
+
+      <ol class="setlist" id="setlist" aria-label="Setlist ratings"></ol>
+
+      <p class="form-warning" id="formWarning">
+        Google Form collection is not configured yet. Ratings will still save in this browser; paste your form URL and entry IDs into the config block to collect responses.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const siteConfig = {
+      bandName: "Pinguin Mofex",
+      pageCopy: "rate our songs",
+      showId: "Rooftop 2026",
+
+      songs: [
+        "the fool",
+        "split it up spit it out",
+        "not so bad",
+        "sitcoms",
+        "maybe it's time",
+        "gutter quarter"
+      ],
+
+      messages: {
+        rejected: [
+          "no",
+          "nope",
+          "denied",
+          "no way",
+          "heck no",
+          "unh-uh",
+          "stop it",
+          "ew",
+          "ew no"
+        ],
+        fourStar: [
+          "fine",
+          "i guess",
+          "meh",
+          "sigh",
+          "sure",
+          "whatever",
+          "...ok"
+        ],
+        fiveStar: [
+          "yup",
+          "smart",
+          "duh",
+          "based",
+          "lit",
+          "vibes",
+          "rad",
+          "obv",
+          "yessir",
+          "yerp",
+          "yeah!",
+          "correct",
+          "valid",
+          "right"
+        ]
+      },
+
+      googleForm: {
+        formResponseUrl: "https://docs.google.com/forms/d/e/1FAIpQLSfkRRuzxsYJzOiR6SwDc6oblu17HuMDxBLUJ-1f4KHYg-hO0w/formResponse",
+        songField: "entry.1632942191",
+        ratingField: "entry.30329005",
+        showField: "entry.500366871"
+      }
+    };
+
+    const storageKey = `setlist-ratings:${siteConfig.showId}`;
+    const setlistEl = document.querySelector("#setlist");
+    const formWarningEl = document.querySelector("#formWarning");
+    const lastMessageByPool = {};
+    let activeBubble = null;
+    let bubbleTimeout = null;
+
+    document.title = `${siteConfig.bandName} Setlist Rater`;
+    document.querySelector("#page-title").textContent = siteConfig.bandName;
+    document.querySelector("#pageCopy").textContent = siteConfig.pageCopy;
+
+    const savedRatings = loadRatings();
+    renderSetlist();
+    updateFormWarning();
+
+    function renderSetlist() {
+      setlistEl.innerHTML = "";
+
+      siteConfig.songs.forEach((song, index) => {
+        const rating = Number(savedRatings[song] || 0);
+        const item = document.createElement("li");
+        item.className = `song-card${rating ? " is-rated" : ""}`;
+        item.dataset.song = song;
+
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.innerHTML = `
+          <span class="track-number">${String(index + 1).padStart(2, "0")}</span>
+          <span class="song-name"></span>
+        `;
+        title.querySelector(".song-name").textContent = song;
+
+        const stars = document.createElement("div");
+        stars.className = "stars";
+        stars.setAttribute("role", "group");
+        stars.setAttribute("aria-label", `Rate ${song}`);
+
+        for (let value = 1; value <= 5; value += 1) {
+          const star = document.createElement("button");
+          star.type = "button";
+          star.className = `star-button${value <= rating ? " is-filled" : ""}`;
+          star.dataset.rating = String(value);
+          star.innerHTML = `<span aria-hidden="true">★</span><span class="sr-only">${value} star${value === 1 ? "" : "s"}</span>`;
+          star.setAttribute("aria-label", `${value} star${value === 1 ? "" : "s"} for ${song}`);
+          star.addEventListener("click", () => handleRating(song, value, star));
+          stars.appendChild(star);
+        }
+
+        item.append(title, stars);
+        setlistEl.appendChild(item);
+      });
+    }
+
+    function handleRating(song, rating, starButton) {
+      delete savedRatings[song];
+      saveRatings();
+      updateSongStars(song, 0);
+
+      if (rating < 4) {
+        showBubble(starButton, randomFrom("rejected"));
+        return;
+      }
+
+      savedRatings[song] = rating;
+      saveRatings();
+      updateSongStars(song, rating);
+      submitToGoogleForm(song, rating);
+
+      showBubble(starButton, randomFrom(rating === 4 ? "fourStar" : "fiveStar"));
+    }
+
+    function updateSongStars(song, rating) {
+      const songCard = [...document.querySelectorAll(".song-card")].find((card) => card.dataset.song === song);
+      if (!songCard) {
+        return;
+      }
+
+      songCard.classList.toggle("is-rated", rating > 0);
+      songCard.querySelectorAll(".star-button").forEach((button) => {
+        button.classList.toggle("is-filled", Number(button.dataset.rating) <= rating);
+      });
+    }
+
+    function submitToGoogleForm(song, rating) {
+      if (!isGoogleFormConfigured()) {
+        updateFormWarning();
+        return;
+      }
+
+      const payload = new FormData();
+      payload.append(siteConfig.googleForm.songField, song);
+      payload.append(siteConfig.googleForm.ratingField, String(rating));
+
+      if (siteConfig.googleForm.showField) {
+        payload.append(siteConfig.googleForm.showField, siteConfig.showId);
+      }
+
+      fetch(siteConfig.googleForm.formResponseUrl, {
+        method: "POST",
+        mode: "no-cors",
+        body: payload
+      }).catch(() => {
+        formWarningEl.textContent = "The rating saved locally, but the Google Form submission could not be sent. Check your form URL and entry IDs.";
+        formWarningEl.classList.add("is-visible");
+      });
+    }
+
+    function isGoogleFormConfigured() {
+      const form = siteConfig.googleForm;
+      return Boolean(
+        form.formResponseUrl &&
+        form.formResponseUrl.includes("/formResponse") &&
+        !form.formResponseUrl.includes("PASTE_") &&
+        form.songField &&
+        form.ratingField &&
+        !form.songField.includes("0000000000") &&
+        !form.ratingField.includes("1111111111")
+      );
+    }
+
+    function updateFormWarning() {
+      formWarningEl.classList.toggle("is-visible", !isGoogleFormConfigured());
+    }
+
+    function showBubble(anchor, message) {
+      if (activeBubble) {
+        activeBubble.remove();
+      }
+
+      clearTimeout(bubbleTimeout);
+
+      const bubble = document.createElement("div");
+      bubble.className = "speech-bubble";
+      bubble.textContent = message;
+      document.body.appendChild(bubble);
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const bubbleRect = bubble.getBoundingClientRect();
+      const top = Math.max(8, anchorRect.top - bubbleRect.height - 12);
+      const preferredLeft = anchorRect.left + (anchorRect.width / 2) - bubbleRect.width + 22;
+      const left = Math.min(
+        window.innerWidth - bubbleRect.width - 8,
+        Math.max(8, preferredLeft)
+      );
+
+      bubble.style.top = `${top}px`;
+      bubble.style.left = `${left}px`;
+      activeBubble = bubble;
+      bubbleTimeout = window.setTimeout(() => {
+        bubble.remove();
+        if (activeBubble === bubble) {
+          activeBubble = null;
+        }
+      }, 840);
+    }
+
+    function loadRatings() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey)) || {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveRatings() {
+      localStorage.setItem(storageKey, JSON.stringify(savedRatings));
+    }
+
+    function randomFrom(poolName) {
+      const messages = siteConfig.messages[poolName];
+
+      if (!Array.isArray(messages) || !messages.length) {
+        return "The band has declined to comment, which is somehow more dramatic.";
+      }
+
+      if (messages.length === 1) {
+        lastMessageByPool[poolName] = messages[0];
+        return messages[0];
+      }
+
+      let nextMessage = messages[Math.floor(Math.random() * messages.length)];
+      while (nextMessage === lastMessageByPool[poolName]) {
+        nextMessage = messages[Math.floor(Math.random() * messages.length)];
+      }
+
+      lastMessageByPool[poolName] = nextMessage;
+      return nextMessage;
+    }
+  </script>
+</body>
+</html>
