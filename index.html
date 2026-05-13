@@ -244,6 +244,10 @@
         var(--panel);
     }
 
+    .song-card.is-error {
+      animation: error-shake 260ms ease-in-out;
+    }
+
     .song-title {
       display: flex;
       align-items: center;
@@ -304,6 +308,17 @@
       text-shadow: 2px 2px 0 var(--red), -2px -2px 0 var(--blue);
     }
 
+    .star-button[data-rating="1"]:hover,
+    .star-button[data-rating="2"]:hover,
+    .star-button[data-rating="3"]:hover,
+    .star-button[data-rating="1"]:focus-visible,
+    .star-button[data-rating="2"]:focus-visible,
+    .star-button[data-rating="3"]:focus-visible {
+      color: rgba(247, 251, 255, 0.28);
+      transform: none;
+      text-shadow: none;
+    }
+
     .star-button.is-filled {
       color: var(--gold);
       text-shadow: 2px 2px 0 var(--red), -2px -2px 0 var(--blue), 0 0 12px rgba(0, 214, 223, 0.7);
@@ -313,6 +328,29 @@
     .star-button[data-rating="2"],
     .star-button[data-rating="3"] {
       cursor: not-allowed;
+    }
+
+    @keyframes error-shake {
+      0%,
+      100% {
+        transform: translateX(0) rotate(var(--tilt, 0deg));
+      }
+
+      22% {
+        transform: translateX(-5px) rotate(var(--tilt, 0deg));
+      }
+
+      44% {
+        transform: translateX(5px) rotate(var(--tilt, 0deg));
+      }
+
+      66% {
+        transform: translateX(-3px) rotate(var(--tilt, 0deg));
+      }
+
+      82% {
+        transform: translateX(3px) rotate(var(--tilt, 0deg));
+      }
     }
 
     .form-warning {
@@ -496,15 +534,7 @@
 
       messages: {
         rejected: [
-          "no",
-          "nope",
-          "denied",
-          "no way",
-          "heck no",
-          "unh-uh",
-          "stop it",
-          "ew",
-          "ew no"
+          "try again"
         ],
         fourStar: [
           "fine",
@@ -600,6 +630,7 @@
       updateSongStars(song, 0);
 
       if (rating < 4) {
+        shakeSongCard(starButton);
         showBubble(starButton, randomFrom("rejected"));
         return;
       }
@@ -621,6 +652,18 @@
       songCard.classList.toggle("is-rated", rating > 0);
       songCard.querySelectorAll(".star-button").forEach((button) => {
         button.classList.toggle("is-filled", Number(button.dataset.rating) <= rating);
+      });
+    }
+
+    function shakeSongCard(starButton) {
+      const songCard = starButton.closest(".song-card");
+      if (!songCard) {
+        return;
+      }
+
+      songCard.classList.remove("is-error");
+      window.requestAnimationFrame(() => {
+        songCard.classList.add("is-error");
       });
     }
 
